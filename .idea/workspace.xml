@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="5a9565c1-2534-4523-ab11-80c2dbc23952" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/Refurbished.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CATALOGO_ARTICOLI_COMPLETATO.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CORREZIONI_SEDE_GARANZIA_NASCOSTE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ERRORE_DATABASE_RISOLTO.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ERRORE_RISOLTO.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ERRORE_SERVICE_CONTRACT_CORRETTO.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ERRORE_SINTASSI_CORRETTO.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/IMPORT_ORDINI_README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/LOGOUT_RISOLTO.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/MENU_AMMINISTRAZIONE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/MIGLIORAMENTI_ADMIN_COMPLETATI.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/MIGRAZIONE_MYSQL.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/NUOVE_FUNZIONALITA.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/NUOVE_FUNZIONALITA_FINALI.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/PROBLEMA_RISOLTO.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/PROBLEMI_RISOLTI_FINALE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/QUICKSTART.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/QUICKSTART_MYSQL_WINDOWS.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/REPORT_RMA_LOGO_RISOLTI.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/RIEPILOGO_NBD.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/RIEPILOGO_TECNICO.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SEDI_AUTOMATICHE_IMPLEMENTATE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SISTEMA_CORRETTO_FINALE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SISTEMA_SEMPLIFICATO_FINALE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEMPO_RISPOSTA_NBD.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TUTTE_FUNZIONALITA_IMPLEMENTATE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TUTTE_MIGLIORIE_FINALI_IMPLEMENTATE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/clean_articoli_ordini.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/crea_cliente_empsol.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/create_database.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/create_superuser.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/create_test_users.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/esempio_articoli.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/import_ordini.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/migrate_tempo_risposta.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/orders/forms.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/orders/management/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/orders/management/commands/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/orders/management/commands/invia_notifiche_scadenze.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/orders/reports.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/orders/static/admin/css/articolo_inline_compact.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/orders/static/admin/css/service_contract_readonly.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/orders/static/admin/css/servicecontract_dark_theme.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/orders/static/admin/js/articolo_inline_toggle.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/orders/static/admin/js/order_inline_defaults.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/orders/urls.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ordini_esempio.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ordini_esempio_aggiornato.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ordini_test_trattino.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/populate_articoli.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/populate_db.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/admin/aggiungi_articoli_servicecontract.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/admin/aggiungi_service_contract.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/admin/orders/articolo/change_list.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/admin/orders/articolo/conferma_eliminazione.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/admin/orders/articolo/import_csv.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/admin/orders/articolo/imposta_brand_categoria.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/admin/orders/ordine/change_form.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/admin/orders/servicecontract/change_form.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/orders/base.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/orders/dashboard.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/orders/ordine_detail.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/orders/report_cliente_sostituzioni.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/orders/report_sostituzioni.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/orders/scadenze.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/orders/search.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/registration/logged_out.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/registration/login.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/registration/password_reset_complete.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/registration/password_reset_confirm.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/registration/password_reset_done.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/registration/password_reset_form.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test_mysql.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test_parsing.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/verifica_sedi_clienti.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 5
+}]]></component>
+  <component name="ProjectId" id="359yo684euQ2Kvzu3bduzo4YxSl" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Django Server.Refurbished.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "django.template.preview.state": "SHOW_EDITOR_AND_PREVIEW",
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "C:/Users/francesco.lavatelli/PycharmProjects/Refurbished",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm"
+  },
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "mysql"
+    ]
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\francesco.lavatelli\PycharmProjects\Refurbished" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="Refurbished" type="Python.DjangoServer" factoryName="Django server">
+      <module name="Refurbished" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="DJANGO_SETTINGS_MODULE" value="Refurbished.settings" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="launchJavascriptDebuger" value="false" />
+      <option name="port" value="8000" />
+      <option name="host" value="" />
+      <option name="additionalOptions" value="" />
+      <option name="browserUrl" value="" />
+      <option name="runTestServer" value="false" />
+      <option name="runNoReload" value="false" />
+      <option name="useCustomRunCommand" value="false" />
+      <option name="customRunCommand" value="" />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-3aa1da707db6-JavaScript-PY-252.27397.106" />
+        <option value="bundled-python-sdk-4e2b1448bda8-9a97661f3031-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-252.27397.106" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="5a9565c1-2534-4523-ab11-80c2dbc23952" name="Changes" comment="" />
+      <created>1762536754195</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1762536754195</updated>
+      <workItem from="1762536755209" duration="36466000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

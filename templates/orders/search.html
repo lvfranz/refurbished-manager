@@ -1,0 +1,278 @@
+{% extends 'orders/base.html' %}
+
+{% block title %}Ricerca - Gestionale Refurbished{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Ricerca Avanzata</h2>
+    <form method="get" class="search-box">
+        <input type="text" name="q" placeholder="Cerca per articolo, seriale, cliente, ordine..." value="{{ query }}">
+        <select name="type">
+            <option value="all" {% if search_type == 'all' %}selected{% endif %}>Tutto</option>
+            <option value="articolo" {% if search_type == 'articolo' %}selected{% endif %}>Articoli</option>
+            <option value="cliente" {% if search_type == 'cliente' %}selected{% endif %}>Clienti</option>
+            <option value="ordine" {% if search_type == 'ordine' %}selected{% endif %}>Ordini</option>
+        </select>
+        <button type="submit">🔍 Cerca</button>
+    </form>
+</div>
+
+{% if query %}
+    {% if results.articoli %}
+    <div class="card">
+        <h2>Articoli ({{ results.articoli|length }})</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Articolo</th>
+                    <th>Seriale</th>
+                    <th>Ordine</th>
+                    <th>Cliente/Sede</th>
+                    <th>Scadenza Garanzia</th>
+                    <th>Stato</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for articolo in results.articoli %}
+                <tr>
+                    <td>
+                        <strong>{{ articolo.articolo.codice_articolo }}</strong><br>
+                        <small style="color: #7f8c8d;">{{ articolo.articolo.descrizione|truncatewords:8 }}</small>
+                    </td>
+                    <td>{{ articolo.numero_seriale|default:"-" }}</td>
+                    <td>
+                        <a href="{% url 'orders:ordine_detail' articolo.ordine.pk %}" style="color: #667eea; text-decoration: none;">
+                            {{ articolo.ordine.numero_ordine }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if articolo.sede_cliente %}
+                            {{ articolo.sede_cliente.cliente.nome }} - {{ articolo.sede_cliente.nome_sede }}
+                        {% else %}
+                            <span style="color: #999;">Non assegnato</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if articolo.service_contract %}
+                            SC: {{ articolo.service_contract.data_fine|date:"d/m/Y" }}
+                        {% else %}
+                            {{ articolo.data_scadenza_garanzia|date:"d/m/Y" }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if articolo.is_in_garanzia %}
+                            <span class="badge badge-success">In Garanzia</span>
+                        {% else %}
+                            <span class="badge badge-danger">Fuori Garanzia</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if results.clienti %}
+    {% for cliente_info in results.clienti %}
+    <div class="card" style="margin-bottom: 30px;">
+        <h2 style="color: #667eea; margin-bottom: 20px;">
+            🏢 {{ cliente_info.cliente.nome }}
+            <small style="color: #7f8c8d; font-size: 16px; font-weight: normal;">
+                ({{ cliente_info.num_sedi }} sedi, {{ cliente_info.num_ordini }} ordini, {{ cliente_info.num_articoli }} articoli, {{ cliente_info.num_contracts }} service contracts)
+            </small>
+        </h2>
+
+        <!-- Sedi -->
+        {% if cliente_info.sedi %}
+        <div style="margin-bottom: 25px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #667eea; border-radius: 4px;">
+            <h3 style="font-size: 18px; margin-bottom: 10px; color: #333;">📍 Sedi ({{ cliente_info.num_sedi }})</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px;">
+                {% for sede in cliente_info.sedi %}
+                <div style="padding: 10px; background-color: white; border-radius: 4px; border: 1px solid #ddd;">
+                    <strong style="color: #667eea;">{{ sede.nome_sede }}</strong>
+                    {% if sede.indirizzo %}
+                        <br><small style="color: #333; font-weight: 500;">{{ sede.indirizzo }}{% if sede.citta %}, {{ sede.citta }}{% endif %}</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Service Contracts -->
+        {% if cliente_info.service_contracts %}
+        <div style="margin-bottom: 25px; padding: 15px; background-color: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 4px;">
+            <h3 style="font-size: 18px; margin-bottom: 10px; color: #333;">📋 Service Contracts Attivi ({{ cliente_info.num_contracts }})</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: #fff;">
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Numero Contratto</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">SLA</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Data Inizio</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Data Fine</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Stato</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sc in cliente_info.service_contracts %}
+                    <tr style="background-color: white;">
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ sc.numero_contratto }}</strong></td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ sc.sla.nome }}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ sc.data_inizio|date:"d/m/Y" }}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ sc.data_fine|date:"d/m/Y" }}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                            {% if sc.is_valid %}
+                                <span style="color: #4caf50; font-weight: bold;">✓ Attivo</span>
+                            {% else %}
+                                <span style="color: #f44336; font-weight: bold;">✗ Scaduto</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- Ordini -->
+        {% if cliente_info.ordini %}
+        <div style="margin-bottom: 25px; padding: 15px; background-color: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px;">
+            <h3 style="font-size: 18px; margin-bottom: 10px; color: #333;">📦 Ordini Recenti ({{ cliente_info.num_ordini }})</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: #fff;">
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Numero Ordine</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Fornitore</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Data</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Tipo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ordine in cliente_info.ordini %}
+                    <tr style="background-color: white; cursor: pointer;" onclick="window.location.href='{% url 'orders:ordine_detail' ordine.pk %}'">
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                            <a href="{% url 'orders:ordine_detail' ordine.pk %}" style="color: #2196f3; text-decoration: none; font-weight: bold;">
+                                {{ ordine.numero_ordine }}
+                            </a>
+                        </td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ ordine.fornitore.nome }}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ ordine.data_ordine|date:"d/m/Y" }}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                            {% if ordine.tipo_ordine == 'STANDARD' %}
+                                <span class="badge badge-info">Standard</span>
+                            {% elif ordine.tipo_ordine == 'RMA' %}
+                                <span class="badge badge-warning">RMA</span>
+                            {% elif ordine.tipo_ordine == 'RINNOVO_GARANZIA' %}
+                                <span class="badge badge-success">Rinnovo</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- Articoli -->
+        {% if cliente_info.articoli %}
+        <div style="padding: 15px; background-color: #fff3e0; border-left: 4px solid #ff9800; border-radius: 4px;">
+            <h3 style="font-size: 18px; margin-bottom: 10px; color: #333;">🔧 Articoli ({{ cliente_info.num_articoli }})</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: #fff;">
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Articolo</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Seriale</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Ordine</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Sede</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Garanzia</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Stato</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for articolo in cliente_info.articoli %}
+                    <tr style="background-color: white;">
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                            <strong>{{ articolo.articolo.codice_articolo }}</strong><br>
+                            <small style="color: #333;">{{ articolo.articolo.descrizione|truncatewords:6 }}</small>
+                        </td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ articolo.numero_seriale|default:"-" }}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                            <a href="{% url 'orders:ordine_detail' articolo.ordine.pk %}" style="color: #ff9800; text-decoration: none;">
+                                {{ articolo.ordine.numero_ordine }}
+                            </a>
+                        </td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ articolo.sede_cliente.nome_sede }}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                            {% if articolo.service_contract %}
+                                <small>SC: {{ articolo.service_contract.numero_contratto }}</small><br>
+                                {{ articolo.service_contract.data_fine|date:"d/m/Y" }}
+                            {% else %}
+                                {{ articolo.data_scadenza_garanzia|date:"d/m/Y" }}
+                            {% endif %}
+                        </td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                            {% if articolo.is_in_garanzia %}
+                                <span style="color: #4caf50; font-weight: bold;">✓ In Garanzia</span>
+                            {% else %}
+                                <span style="color: #f44336; font-weight: bold;">✗ Scaduta</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if results.ordini %}
+    <div class="card">
+        <h2>Ordini ({{ results.ordini|length }})</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Numero Ordine</th>
+                    <th>Fornitore</th>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                </tr>
+            </thead>
+        <tbody>
+            {% for ordine in results.ordini %}
+            <tr onclick="window.location.href='{% url 'orders:ordine_detail' ordine.pk %}'" style="cursor: pointer;">
+                <td>
+                    <a href="{% url 'orders:ordine_detail' ordine.pk %}" style="color: #667eea; text-decoration: none; font-weight: bold;">
+                        {{ ordine.numero_ordine }}
+                    </a>
+                </td>
+                <td>{{ ordine.fornitore.nome }}</td>
+                <td>{{ ordine.data_ordine|date:"d/m/Y" }}</td>
+                <td>
+                    {% if ordine.tipo_ordine == 'STANDARD' %}
+                        <span class="badge badge-info">Standard</span>
+                    {% elif ordine.tipo_ordine == 'RMA' %}
+                        <span class="badge badge-warning">RMA</span>
+                    {% elif ordine.tipo_ordine == 'RINNOVO_GARANZIA' %}
+                        <span class="badge badge-success">Rinnovo Garanzia</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if not results.articoli and not results.clienti and not results.ordini %}
+    <div class="card">
+        <div class="empty-state">
+            <p>Nessun risultato trovato per "{{ query }}"</p>
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
+{% endblock %}
+

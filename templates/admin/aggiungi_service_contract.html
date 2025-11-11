@@ -1,0 +1,37 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<h1>Aggiungi Articoli a Service Contract</h1>
+
+<p><strong>Cliente:</strong> {{ cliente.nome }}</p>
+<p><strong>Articoli selezionati:</strong> {{ queryset.count }}</p>
+
+<div style="margin: 20px 0; padding: 15px; background-color: #e3f2fd; border-left: 4px solid #2196F3; border-radius: 4px;">
+    <h3>Articoli da aggiungere:</h3>
+    <ul>
+    {% for articolo in queryset %}
+        <li>
+            <strong>{{ articolo.articolo.codice_articolo }}</strong>
+            {% if articolo.numero_seriale %}- Seriale: {{ articolo.numero_seriale }}{% endif %}
+            - Ordine: {{ articolo.ordine.numero_ordine }}
+        </li>
+    {% endfor %}
+    </ul>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div style="margin: 20px 0;">
+        {{ form.as_p }}
+    </div>
+
+    <div style="margin-top: 20px;">
+        <input type="submit" name="apply" value="Aggiungi al Service Contract" style="background-color: #417690; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
+        <a href="{% url 'admin:orders_articoloordine_changelist' %}" style="margin-left: 10px; padding: 10px 20px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">Annulla</a>
+    </div>
+</form>
+
+{% endblock %}
+

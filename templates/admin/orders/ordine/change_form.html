@@ -1,0 +1,18 @@
+{% extends "admin/change_form.html" %}
+
+{% block submit_buttons_bottom %}
+<div class="submit-row">
+    {% if not is_popup %}
+        {% if not original %}
+            {# Durante la CREAZIONE mostra SOLO "Salva e continua a modificare" #}
+            <input type="submit" value="Salva e continua a modificare" name="_continue" class="default">
+        {% else %}
+            {# Durante la MODIFICA mostra tutti i pulsanti normali #}
+            {{ block.super }}
+        {% endif %}
+    {% else %}
+        {{ block.super }}
+    {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,101 @@
+{% extends 'orders/base.html' %}
+
+{% block title %}Dashboard - Gestionale Refurbished{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 1.5rem;">Dashboard</h2>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Totale Articoli</h3>
+        <div class="value">{{ stats.totale_articoli }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Articoli in Garanzia</h3>
+        <div class="value">{{ stats.articoli_in_garanzia }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>RMA Aperti</h3>
+        <div class="value">{{ stats.rma_aperti }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Service Contracts Attivi</h3>
+        <div class="value">{{ stats.service_contracts_attivi }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Ultimi Ordini</h2>
+    {% if ultimi_ordini %}
+    <table>
+        <thead>
+            <tr>
+                <th>Numero Ordine</th>
+                <th>Fornitore</th>
+                <th>Data</th>
+                <th>Tipo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ordine in ultimi_ordini %}
+            <tr onclick="window.location.href='{% url 'orders:ordine_detail' ordine.pk %}'" style="cursor: pointer;">
+                <td>
+                    <a href="{% url 'orders:ordine_detail' ordine.pk %}" style="color: #667eea; text-decoration: none; font-weight: bold;">
+                        {{ ordine.numero_ordine }}
+                    </a>
+                </td>
+                <td>{{ ordine.fornitore.nome }}</td>
+                <td>{{ ordine.data_ordine|date:"d/m/Y" }}</td>
+                <td>
+                    {% if ordine.tipo_ordine == 'STANDARD' %}
+                        <span class="badge badge-info">Standard</span>
+                    {% elif ordine.tipo_ordine == 'RMA' %}
+                        <span class="badge badge-warning">RMA</span>
+                    {% elif ordine.tipo_ordine == 'RINNOVO_GARANZIA' %}
+                        <span class="badge badge-success">Rinnovo Garanzia</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Nessun ordine presente</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>RMA Aperti</h2>
+    {% if rma_recenti %}
+    <table>
+        <thead>
+            <tr>
+                <th>Numero RMA</th>
+                <th>Articolo</th>
+                <th>Seriale</th>
+                <th>Data Apertura</th>
+                <th>Stato</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rma in rma_recenti %}
+            <tr>
+                <td><strong>{{ rma.numero_rma }}</strong></td>
+                <td>{{ rma.articolo_originale.articolo }}</td>
+                <td>{{ rma.articolo_originale.numero_seriale|default:"-" }}</td>
+                <td>{{ rma.data_apertura|date:"d/m/Y" }}</td>
+                <td><span class="badge badge-warning">{{ rma.get_stato_display }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Nessun RMA aperto</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

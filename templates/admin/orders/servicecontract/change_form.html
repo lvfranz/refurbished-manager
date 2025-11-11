@@ -1,0 +1,24 @@
+{% extends "admin/change_form.html" %}
+
+{% block submit_buttons_bottom %}
+{{ block.super }}
+
+{% if has_articoli_disponibili and not is_popup %}
+<div style="margin-top: 15px; padding: 10px; background-color: #2b2b2b; border-left: 4px solid #79aec8; border-radius: 4px;">
+    <p style="margin: 0 0 8px 0; font-size: 13px; color: #79aec8; font-weight: bold;">
+        Ci sono {{ articoli_disponibili.count }} articoli disponibili di {{ cliente_nome }} senza service contract
+    </p>
+    <a href="{% url 'admin:servicecontract_aggiungi_articoli' sc_id %}"
+       style="display: inline-block; padding: 8px 12px; background-color: #417690; color: #fff; text-decoration: none; border-radius: 4px; font-size: 13px; font-weight: bold;">
+        Aggiungi Articoli a Questo Service Contract
+    </a>
+</div>
+{% elif not has_articoli_disponibili and not is_popup %}
+<div style="margin-top: 15px; padding: 10px; background-color: #2b2b2b; border-left: 4px solid #888; border-radius: 4px;">
+    <p style="margin: 0; color: #aaa; font-size: 13px;">
+        Tutti gli articoli di <strong style="color: #fff;">{{ cliente_nome }}</strong> hanno già un service contract o non esistono articoli disponibili.
+    </p>
+</div>
+{% endif %}
+{% endblock %}
+

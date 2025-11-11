@@ -1,0 +1,131 @@
+{% extends 'orders/base.html' %}
+
+{% block title %}Report Sostituzioni {{ cliente.nome }} - Gestionale Refurbished{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'orders:report_sostituzioni' %}" style="color: #667eea; text-decoration: none;">← Torna al Report Generale</a>
+</div>
+
+<div class="card">
+    <h2>📊 Report Sostituzioni: {{ cliente.nome }}</h2>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
+        <div style="padding: 1rem; background-color: #e3f2fd; border-radius: 8px;">
+            <div style="font-size: 0.9rem; color: #7f8c8d;">Totale Articoli</div>
+            <div style="font-size: 2rem; font-weight: bold; color: #2196F3;">{{ total_articoli }}</div>
+        </div>
+        <div style="padding: 1rem; background-color: #fff3cd; border-radius: 8px;">
+            <div style="font-size: 0.9rem; color: #7f8c8d;">Totale RMA</div>
+            <div style="font-size: 2rem; font-weight: bold; color: #ffc107;">{{ total_rma }}</div>
+        </div>
+    </div>
+</div>
+
+{% if sostituzioni %}
+<div class="card">
+    <h3>Articoli Sostituiti</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>RMA</th>
+                <th>Sede</th>
+                <th>Articolo Vecchio</th>
+                <th>Seriale Vecchio</th>
+                <th>→</th>
+                <th>Articolo Nuovo</th>
+                <th>Seriale Nuovo</th>
+                <th>Data</th>
+                <th>Motivo</th>
+                <th>Stato</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sost in sostituzioni %}
+            <tr>
+                <td><strong>{{ sost.rma.numero_rma }}</strong></td>
+                <td>
+                    {% if sost.sede %}
+                    {{ sost.sede.nome_sede }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>
+                    <div style="display: flex; align-items: center;">
+                        <div>
+                            <strong>{{ sost.articolo_vecchio.articolo.codice_articolo }}</strong><br>
+                            <small style="color: #7f8c8d;">{{ sost.articolo_vecchio.articolo.descrizione|truncatewords:5 }}</small>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    {% if sost.articolo_vecchio.numero_seriale %}
+                    <code style="background: #ffebee; padding: 0.25rem 0.5rem; border-radius: 3px; color: #c62828;">
+                        {{ sost.articolo_vecchio.numero_seriale }}
+                    </code>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td style="text-align: center; font-size: 1.5rem;">→</td>
+                <td>
+                    {% if sost.articolo_nuovo %}
+                    <div style="display: flex; align-items: center;">
+                        <div>
+                            <strong>{{ sost.articolo_nuovo.articolo.codice_articolo }}</strong><br>
+                            <small style="color: #7f8c8d;">{{ sost.articolo_nuovo.articolo.descrizione|truncatewords:5 }}</small>
+                        </div>
+                    </div>
+                    {% else %}
+                    <span style="color: #999;">In attesa</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if sost.articolo_nuovo and sost.articolo_nuovo.numero_seriale %}
+                    <code style="background: #e8f5e9; padding: 0.25rem 0.5rem; border-radius: 3px; color: #2e7d32;">
+                        {{ sost.articolo_nuovo.numero_seriale }}
+                    </code>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>{{ sost.rma.data_apertura|date:"d/m/Y" }}</td>
+                <td>
+                    <small>{{ sost.rma.motivo|truncatewords:5 }}</small>
+                </td>
+                <td>
+                    {% if sost.rma.stato == 'APERTO' %}
+                        <span class="badge badge-info">Aperto</span>
+                    {% elif sost.rma.stato == 'IN_LAVORAZIONE' %}
+                        <span class="badge badge-warning">In Lavorazione</span>
+                    {% elif sost.rma.stato == 'CHIUSO' %}
+                        <span class="badge badge-success">Chiuso</span>
+                    {% else %}
+                        <span class="badge" style="background-color: #999;">{{ sost.rma.get_stato_display }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <p>Nessuna sostituzione per questo cliente</p>
+    </div>
+</div>
+{% endif %}
+
+<div style="margin-top: 2rem; text-align: center;">
+    <a href="{% url 'orders:report_sostituzioni' %}" style="display: inline-block; padding: 0.75rem 1.5rem; background-color: #667eea; color: white; text-decoration: none; border-radius: 6px; margin-right: 1rem;">
+        ← Report Generale
+    </a>
+    <a href="{% url 'orders:dashboard' %}" style="display: inline-block; padding: 0.75rem 1.5rem; background-color: #6c757d; color: white; text-decoration: none; border-radius: 6px;">
+        Dashboard
+    </a>
+</div>
+{% endblock %}
+

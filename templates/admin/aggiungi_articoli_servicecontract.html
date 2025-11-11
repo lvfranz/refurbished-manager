@@ -1,0 +1,201 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 20px auto;">
+    <h1>Aggiungi Articoli a Service Contract</h1>
+
+    <div style="margin: 20px 0; padding: 15px; background-color: #2b2b2b; border-left: 4px solid #79aec8; border-radius: 4px;">
+        <p style="margin: 5px 0; font-size: 14px; color: #79aec8;">
+            <strong>Service Contract:</strong> <span style="color: #fff;">{{ sc.numero_contratto }}</span>
+        </p>
+        <p style="margin: 5px 0; font-size: 14px; color: #79aec8;">
+            <strong>Cliente:</strong> <span style="color: #fff;">{{ sc.cliente.nome }}</span>
+        </p>
+        <p style="margin: 5px 0; font-size: 14px; color: #79aec8;">
+            <strong>SLA:</strong> <span style="color: #fff;">{{ sc.sla.nome }}</span>
+        </p>
+        <p style="margin: 5px 0; font-size: 14px; color: #79aec8;">
+            <strong>Periodo:</strong> <span style="color: #fff;">{{ sc.data_inizio|date:"d/m/Y" }} - {{ sc.data_fine|date:"d/m/Y" }}</span>
+        </p>
+    </div>
+
+    {% if articoli_disponibili %}
+    <form method="post">
+        {% csrf_token %}
+
+        <div style="margin: 20px 0;">
+            <h2 style="color: #79aec8; font-size: 18px; margin-bottom: 10px; font-weight: bold;">Articoli Disponibili (<span id="articoli-count">{{ articoli_disponibili.count }}</span>)</h2>
+            <p style="color: #ccc; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
+                Seleziona gli articoli del cliente <strong style="color: #fff;">{{ sc.cliente.nome }}</strong> da aggiungere a questo service contract:
+            </p>
+
+            <!-- Search Box -->
+            <div style="margin-bottom: 15px; padding: 10px; background-color: #2b2b2b; border: 1px solid #555; border-radius: 4px;">
+                <label for="search-articoli" style="display: block; font-size: 14px; font-weight: bold; color: #79aec8; margin-bottom: 8px;">
+                    🔍 Cerca Articoli:
+                </label>
+                <input
+                    type="text"
+                    id="search-articoli"
+                    placeholder="Cerca per codice, seriale, descrizione, ordine o sede..."
+                    style="width: 100%; padding: 10px; font-size: 14px; border: 1px solid #555; border-radius: 4px; box-sizing: border-box; background-color: #1a1a1a; color: #fff;"
+                >
+                <p style="margin: 8px 0 0 0; font-size: 13px; color: #ccc;">
+                    Articoli trovati: <strong style="color: #79aec8;" id="risultati-count">{{ articoli_disponibili.count }}</strong>
+                </p>
+            </div>
+
+            <table id="articoli-table" style="width: 100%; border-collapse: collapse; margin-top: 10px; background-color: #2b2b2b;">
+                <thead>
+                    <tr style="background-color: #1a1a1a; border-bottom: 2px solid #555;">
+                        <th style="padding: 12px; text-align: left; font-size: 14px; font-weight: bold; color: #79aec8;">Seleziona</th>
+                        <th style="padding: 12px; text-align: left; font-size: 14px; font-weight: bold; color: #79aec8;">Articolo</th>
+                        <th style="padding: 12px; text-align: left; font-size: 14px; font-weight: bold; color: #79aec8;">Numero Seriale</th>
+                        <th style="padding: 12px; text-align: left; font-size: 14px; font-weight: bold; color: #79aec8;">Ordine</th>
+                        <th style="padding: 12px; text-align: left; font-size: 14px; font-weight: bold; color: #79aec8;">Sede</th>
+                        <th style="padding: 12px; text-align: left; font-size: 14px; font-weight: bold; color: #79aec8;">Garanzia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for articolo_ordine in articoli_disponibili %}
+                    <tr style="background-color: {% cycle '#2b2b2b' '#1f1f1f' %};">
+                        <td style="padding: 10px; border-bottom: 1px solid #444; text-align: center;">
+                            <input type="checkbox" name="articoli" value="{{ articolo_ordine.pk }}" id="art_{{ articolo_ordine.pk }}">
+                        </td>
+                        <td style="padding: 10px; border-bottom: 1px solid #444;">
+                            <strong style="font-size: 14px; color: #fff;">{{ articolo_ordine.articolo.codice_articolo }}</strong><br>
+                            <span style="font-size: 13px; color: #aaa;">{{ articolo_ordine.articolo.descrizione|truncatewords:10 }}</span>
+                        </td>
+                        <td style="padding: 10px; border-bottom: 1px solid #444;">
+                            {% if articolo_ordine.numero_seriale %}
+                            <code style="background: #1a1a1a; padding: 4px 8px; border-radius: 3px; font-size: 13px; color: #ffc107; border: 1px solid #555;">{{ articolo_ordine.numero_seriale }}</code>
+                            {% else %}
+                            <span style="color: #666;">-</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 10px; border-bottom: 1px solid #444; font-size: 14px; color: #fff;">{{ articolo_ordine.ordine.numero_ordine }}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #444; font-size: 14px; color: #fff;">
+                            {% if articolo_ordine.sede_cliente %}
+                            {{ articolo_ordine.sede_cliente.nome_sede }}
+                            {% else %}
+                            <span style="color: #666;">-</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 10px; border-bottom: 1px solid #444; font-size: 14px; color: #fff;">
+                            {{ articolo_ordine.mesi_garanzia }} mesi
+                            {% if articolo_ordine.data_scadenza_garanzia %}
+                            <br><span style="font-size: 12px; color: #aaa;">Scad: {{ articolo_ordine.data_scadenza_garanzia|date:"d/m/Y" }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 15px; padding: 15px; background-color: #2b2b2b; border-left: 4px solid #ffc107; border-radius: 4px;">
+            <strong style="font-size: 14px; color: #ffc107;">⚠️ Attenzione:</strong>
+            <p style="margin: 5px 0 0 0; font-size: 13px; color: #ddd; line-height: 1.5;">
+                Aggiungendo articoli a questo service contract, la loro garanzia standard verrà sostituita dalla copertura del service contract.
+            </p>
+        </div>
+
+        <div style="margin-top: 15px;">
+            <button type="submit" style="background-color: #417690; color: #fff; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                Aggiungi Articoli Selezionati al Service Contract
+            </button>
+            <a href="{% url 'admin:orders_servicecontract_change' sc.pk %}" style="margin-left: 10px; padding: 10px 15px; background-color: #ba2121; color: #fff; text-decoration: none; border-radius: 4px; display: inline-block; font-size: 14px;">
+                Annulla
+            </a>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const table = document.querySelector('#articoli-table');
+                const thead = table.querySelector('thead tr');
+                const tbody = table.querySelector('tbody');
+                const searchInput = document.getElementById('search-articoli');
+                const risultatiCount = document.getElementById('risultati-count');
+
+                // Select all checkbox
+                const selectAllCheckbox = document.createElement('input');
+                selectAllCheckbox.type = 'checkbox';
+                selectAllCheckbox.id = 'select_all';
+                selectAllCheckbox.style.marginRight = '5px';
+
+                const firstTh = thead.querySelector('th');
+                const label = document.createElement('label');
+                label.style.cursor = 'pointer';
+                label.appendChild(selectAllCheckbox);
+                label.appendChild(document.createTextNode(' Tutti'));
+                firstTh.innerHTML = '';
+                firstTh.appendChild(label);
+
+                selectAllCheckbox.addEventListener('change', function() {
+                    const checkboxes = document.querySelectorAll('input[name="articoli"]:not([style*="display: none"])');
+                    checkboxes.forEach(cb => {
+                        const row = cb.closest('tr');
+                        if (row.style.display !== 'none') {
+                            cb.checked = selectAllCheckbox.checked;
+                        }
+                    });
+                });
+
+                // Search functionality
+                if (searchInput) {
+                    searchInput.addEventListener('input', function() {
+                        const searchTerm = this.value.toLowerCase().trim();
+                        const rows = tbody.querySelectorAll('tr');
+                        let visibleCount = 0;
+
+                        rows.forEach(row => {
+                            const codice = row.cells[1].textContent.toLowerCase();
+                            const seriale = row.cells[2].textContent.toLowerCase();
+                            const ordine = row.cells[3].textContent.toLowerCase();
+                            const sede = row.cells[4].textContent.toLowerCase();
+
+                            const matches = codice.includes(searchTerm) ||
+                                          seriale.includes(searchTerm) ||
+                                          ordine.includes(searchTerm) ||
+                                          sede.includes(searchTerm);
+
+                            if (matches) {
+                                row.style.display = '';
+                                visibleCount++;
+                            } else {
+                                row.style.display = 'none';
+                            }
+                        });
+
+                        // Aggiorna contatore risultati
+                        risultatiCount.textContent = visibleCount;
+
+                        // Uncheck select all se filtro attivo
+                        if (searchTerm) {
+                            selectAllCheckbox.checked = false;
+                        }
+                    });
+
+                    // Focus automatico sulla search box
+                    searchInput.focus();
+                }
+            });
+        </script>
+    </form>
+    {% else %}
+    <div style="margin: 20px 0; padding: 15px; background-color: #2b2b2b; border-left: 4px solid #888; border-radius: 4px; text-align: center;">
+        <p style="font-size: 14px; color: #ccc; margin-bottom: 10px;">
+            Non ci sono articoli disponibili per questo cliente.
+        </p>
+        <p style="color: #aaa; font-size: 13px; line-height: 1.5;">
+            Tutti gli articoli di <strong style="color: #fff;">{{ sc.cliente.nome }}</strong> hanno già un service contract assegnato o non esistono articoli per questo cliente.
+        </p>
+        <a href="{% url 'admin:orders_servicecontract_change' sc.pk %}" style="margin-top: 10px; display: inline-block; padding: 10px 15px; background-color: #417690; color: #fff; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: bold;">
+            ← Torna al Service Contract
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

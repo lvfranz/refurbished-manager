@@ -1,0 +1,104 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 20px auto;">
+    <h1>📥 Importa Articoli da CSV</h1>
+
+    <div style="margin: 20px 0; padding: 20px; background-color: #e3f2fd; border-left: 4px solid #2196F3; border-radius: 4px;">
+        <h3 style="margin-top: 0;">ℹ️ Formato File CSV</h3>
+        <p style="margin-bottom: 10px;">Il file CSV deve contenere <strong>2 colonne</strong> (senza intestazione):</p>
+        <ol style="line-height: 1.8;">
+            <li><strong>Codice Articolo</strong> (verrà convertito in UPPERCASE automaticamente)</li>
+            <li><strong>Descrizione</strong></li>
+        </ol>
+
+        <h4>📋 Esempio di file CSV:</h4>
+        <pre style="background-color: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; overflow-x: auto;">abc123,Cisco Switch 2960 24 port
+def456,Dell PowerEdge R640 Server
+ghi789,EMC VNX Storage Array
+jkl012,SFP+ 10G Module</pre>
+
+        <p style="margin-top: 15px; font-style: italic; color: #555;">
+            💡 Il file verrà salvato come <code>UTF-8</code>. Assicurati che il tuo editor supporti questo formato.
+        </p>
+    </div>
+
+    <div style="margin: 20px 0; padding: 20px; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+        <h3 style="margin-top: 0;">🤖 Mappatura Automatica</h3>
+        <p>Il sistema applicherà automaticamente queste regole:</p>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+                <tr style="background-color: #f5f5f5;">
+                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Parola Chiave</th>
+                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Costruttore</th>
+                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Categoria</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>Cisco</strong></td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">Cisco</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">Switch</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>SFP</strong></td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">Cisco</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">SFP</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>Del</strong></td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">Dell</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">Server</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>HP / Hewlett</strong></td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">HP</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">Server</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>EMC / VNX / Unity</strong></td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">EMC</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">Storage</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>Disk</strong></td>
+                    <td style="padding: 10px; border: 1px solid #ddd;"><em>(mantiene esistente)</em></td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">Hard Disk</td>
+                </tr>
+            </tbody>
+        </table>
+        <p style="margin-top: 15px; font-size: 15px; color: #333; font-weight: 500;">
+            ⚠️ Se nessuna parola chiave viene trovata, costruttore e categoria resteranno vuoti.
+        </p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" style="margin-top: 30px;">
+        {% csrf_token %}
+
+        <div style="margin-bottom: 20px;">
+            {{ form.as_p }}
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button type="submit" style="background-color: #28a745; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold;">
+                📥 Importa Articoli
+            </button>
+            <a href="{% url 'admin:orders_articolo_changelist' %}" style="margin-left: 10px; padding: 12px 24px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block; font-size: 16px;">
+                Annulla
+            </a>
+        </div>
+    </form>
+
+    <div style="margin-top: 30px; padding: 20px; background-color: #e8f5e9; border: 2px solid #4caf50; border-radius: 8px;">
+        <h3 style="margin-top: 0; color: #2e7d32; font-size: 20px;">⚠️ Note Importanti</h3>
+        <ul style="line-height: 2; font-size: 16px; color: #333;">
+            <li>Gli articoli con <strong style="color: #d32f2f;">codice già esistente</strong> verranno <strong>saltati</strong> (non sovrascritti) a meno che non attivi l'opzione "Sovrascrivi"</li>
+            <li>Il <strong>codice articolo</strong> verrà automaticamente convertito in <strong style="color: #1976d2;">MAIUSCOLO</strong></li>
+            <li>La dimensione massima del file è <strong style="color: #f57c00;">5 MB</strong></li>
+            <li>Tutti gli articoli importati saranno <strong style="color: #388e3c;">attivi</strong> di default</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+

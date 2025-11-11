@@ -1,0 +1,230 @@
+{% extends 'orders/base.html' %}
+
+{% block title %}Scadenze - Gestionale Refurbished{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 1.5rem;">Monitoraggio Scadenze</h2>
+
+<div class="card">
+    <h2>⚠️ Garanzie Scadute ({{ garanzie_scadute|length }})</h2>
+    {% if garanzie_scadute %}
+    <table>
+        <thead>
+            <tr>
+                <th>Articolo</th>
+                <th>Seriale</th>
+                <th>Cliente/Sede</th>
+                <th>Data Scadenza</th>
+                <th>Giorni Scaduti</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for articolo in garanzie_scadute %}
+            <tr>
+                <td><strong>{{ articolo.articolo }}</strong></td>
+                <td>{{ articolo.numero_seriale|default:"-" }}</td>
+                <td>
+                    {% if articolo.sede_cliente %}
+                        {{ articolo.sede_cliente.cliente.nome }} - {{ articolo.sede_cliente.nome_sede }}
+                    {% else %}
+                        <span style="color: #999;">Non assegnato</span>
+                    {% endif %}
+                </td>
+                <td>{{ articolo.data_scadenza_garanzia|date:"d/m/Y" }}</td>
+                <td>
+                    <span class="badge badge-danger">
+                        {{ articolo.data_scadenza_garanzia|timesince }} fa
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>✅ Nessuna garanzia scaduta</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>⏰ Garanzie in Scadenza (30 giorni) ({{ garanzie_30_giorni|length }})</h2>
+    {% if garanzie_30_giorni %}
+    <table>
+        <thead>
+            <tr>
+                <th>Articolo</th>
+                <th>Seriale</th>
+                <th>Cliente/Sede</th>
+                <th>Data Scadenza</th>
+                <th>Giorni Rimanenti</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for articolo in garanzie_30_giorni %}
+            <tr>
+                <td><strong>{{ articolo.articolo }}</strong></td>
+                <td>{{ articolo.numero_seriale|default:"-" }}</td>
+                <td>
+                    {% if articolo.sede_cliente %}
+                        {{ articolo.sede_cliente.cliente.nome }} - {{ articolo.sede_cliente.nome_sede }}
+                    {% else %}
+                        <span style="color: #999;">Non assegnato</span>
+                    {% endif %}
+                </td>
+                <td>{{ articolo.data_scadenza_garanzia|date:"d/m/Y" }}</td>
+                <td>
+                    <span class="badge badge-warning">
+                        {{ articolo.data_scadenza_garanzia|timeuntil }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Nessuna garanzia in scadenza nei prossimi 30 giorni</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📅 Garanzie in Scadenza (60 giorni) ({{ garanzie_60_giorni|length }})</h2>
+    {% if garanzie_60_giorni %}
+    <table>
+        <thead>
+            <tr>
+                <th>Articolo</th>
+                <th>Seriale</th>
+                <th>Cliente/Sede</th>
+                <th>Data Scadenza</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for articolo in garanzie_60_giorni %}
+            <tr>
+                <td><strong>{{ articolo.articolo }}</strong></td>
+                <td>{{ articolo.numero_seriale|default:"-" }}</td>
+                <td>
+                    {% if articolo.sede_cliente %}
+                        {{ articolo.sede_cliente.cliente.nome }} - {{ articolo.sede_cliente.nome_sede }}
+                    {% else %}
+                        <span style="color: #999;">Non assegnato</span>
+                    {% endif %}
+                </td>
+                <td>{{ articolo.data_scadenza_garanzia|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Nessuna garanzia in scadenza tra 30 e 60 giorni</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>⚠️ Service Contracts Scaduti ({{ contracts_scaduti|length }})</h2>
+    {% if contracts_scaduti %}
+    <table>
+        <thead>
+            <tr>
+                <th>Numero Contratto</th>
+                <th>Cliente</th>
+                <th>SLA</th>
+                <th>Data Fine</th>
+                <th>Giorni Scaduti</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for contract in contracts_scaduti %}
+            <tr>
+                <td><strong>{{ contract.numero_contratto }}</strong></td>
+                <td>{{ contract.cliente.nome }}</td>
+                <td>{{ contract.sla.nome }}</td>
+                <td>{{ contract.data_fine|date:"d/m/Y" }}</td>
+                <td>
+                    <span class="badge badge-danger">
+                        {{ contract.data_fine|timesince }} fa
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>✅ Nessun service contract scaduto</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>⏰ Service Contracts in Scadenza (30 giorni) ({{ contracts_30_giorni|length }})</h2>
+    {% if contracts_30_giorni %}
+    <table>
+        <thead>
+            <tr>
+                <th>Numero Contratto</th>
+                <th>Cliente</th>
+                <th>SLA</th>
+                <th>Data Fine</th>
+                <th>Giorni Rimanenti</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for contract in contracts_30_giorni %}
+            <tr>
+                <td><strong>{{ contract.numero_contratto }}</strong></td>
+                <td>{{ contract.cliente.nome }}</td>
+                <td>{{ contract.sla.nome }}</td>
+                <td>{{ contract.data_fine|date:"d/m/Y" }}</td>
+                <td>
+                    <span class="badge badge-warning">
+                        {{ contract.data_fine|timeuntil }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Nessun service contract in scadenza nei prossimi 30 giorni</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📅 Service Contracts in Scadenza (60 giorni) ({{ contracts_60_giorni|length }})</h2>
+    {% if contracts_60_giorni %}
+    <table>
+        <thead>
+            <tr>
+                <th>Numero Contratto</th>
+                <th>Cliente</th>
+                <th>SLA</th>
+                <th>Data Fine</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for contract in contracts_60_giorni %}
+            <tr>
+                <td><strong>{{ contract.numero_contratto }}</strong></td>
+                <td>{{ contract.cliente.nome }}</td>
+                <td>{{ contract.sla.nome }}</td>
+                <td>{{ contract.data_fine|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Nessun service contract in scadenza tra 30 e 60 giorni</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

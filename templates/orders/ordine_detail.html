@@ -1,0 +1,219 @@
+{% extends 'orders/base.html' %}
+
+{% block title %}Ordine {{ ordine.numero_ordine }} - Gestionale Refurbished{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'orders:dashboard' %}" style="color: #667eea; text-decoration: none;">← Torna alla Dashboard</a>
+</div>
+
+<div class="card">
+    <h2>📦 Dettaglio Ordine: {{ ordine.numero_ordine }}</h2>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; padding: 1.5rem; background-color: #f8f9fa; border-radius: 8px;">
+        <div>
+            <strong style="color: #7f8c8d; display: block; margin-bottom: 0.5rem;">Fornitore</strong>
+            <span style="font-size: 1.1rem;">{{ ordine.fornitore.nome }}</span>
+            {% if ordine.fornitore.commerciale_riferimento %}
+            <div style="color: #7f8c8d; font-size: 0.9rem; margin-top: 0.25rem;">
+                Rif: {{ ordine.fornitore.commerciale_riferimento }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div>
+            <strong style="color: #7f8c8d; display: block; margin-bottom: 0.5rem;">Data Ordine</strong>
+            <span style="font-size: 1.1rem;">{{ ordine.data_ordine|date:"d/m/Y" }}</span>
+        </div>
+
+        <div>
+            <strong style="color: #7f8c8d; display: block; margin-bottom: 0.5rem;">Tipo Ordine</strong>
+            {% if ordine.tipo_ordine == 'STANDARD' %}
+                <span class="badge badge-info">Standard</span>
+            {% elif ordine.tipo_ordine == 'RMA' %}
+                <span class="badge badge-warning">RMA</span>
+            {% elif ordine.tipo_ordine == 'RINNOVO_GARANZIA' %}
+                <span class="badge badge-success">Rinnovo Garanzia</span>
+            {% endif %}
+        </div>
+
+        <div>
+            <strong style="color: #7f8c8d; display: block; margin-bottom: 0.5rem;">Numero Articoli</strong>
+            <span style="font-size: 1.1rem;">{{ articoli|length }}</span>
+        </div>
+    </div>
+
+    {% if ordine.ordine_originale_rma %}
+    <div style="margin-top: 1rem; padding: 1rem; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+        <strong>🔗 RMA dell'ordine originale:</strong>
+        <a href="{% url 'orders:ordine_detail' ordine.ordine_originale_rma.pk %}" style="color: #667eea; text-decoration: none;">
+            {{ ordine.ordine_originale_rma.numero_ordine }}
+        </a>
+    </div>
+    {% endif %}
+
+    {% if ordine.ordine_materiale_collegato %}
+    <div style="margin-top: 1rem; padding: 1rem; background-color: #d4edda; border-left: 4px solid #28a745; border-radius: 4px;">
+        <strong>🔗 Estensione garanzia per ordine:</strong>
+        <a href="{% url 'orders:ordine_detail' ordine.ordine_materiale_collegato.pk %}" style="color: #667eea; text-decoration: none;">
+            {{ ordine.ordine_materiale_collegato.numero_ordine }}
+        </a>
+    </div>
+    {% endif %}
+
+    {% if ordine.note %}
+    <div style="margin-top: 1rem; padding: 1rem; background-color: #e7f3ff; border-left: 4px solid #2196F3; border-radius: 4px;">
+        <strong>📝 Note:</strong>
+        <div style="margin-top: 0.5rem; white-space: pre-wrap;">{{ ordine.note }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📋 Articoli dell'Ordine ({{ articoli|length }})</h2>
+
+    {% if articoli %}
+    <table>
+        <thead>
+            <tr>
+                <th>Articolo</th>
+                <th>Descrizione</th>
+                <th>Seriale</th>
+                <th>Quantità</th>
+                <th>Cliente/Sede</th>
+                <th>Garanzia</th>
+                <th>Scadenza</th>
+                <th>Stato</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for articolo in articoli %}
+            <tr>
+                <td>
+                    <strong>{{ articolo.articolo.codice_articolo }}</strong>
+                    {% if articolo.note %}
+                    <br><small style="color: #3498db;">📝 {{ articolo.note }}</small>
+                    {% endif %}
+                </td>
+                <td>{{ articolo.articolo.descrizione|truncatewords:10 }}</td>
+                <td>
+                    {% if articolo.numero_seriale %}
+                        <code style="background: #f5f5f5; padding: 0.25rem 0.5rem; border-radius: 3px;">{{ articolo.numero_seriale }}</code>
+                    {% else %}
+                        <span style="color: #999;">-</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">{{ articolo.quantita }}</td>
+                <td>
+                    {% if articolo.sede_cliente %}
+                        <div><strong>{{ articolo.sede_cliente.cliente.nome }}</strong></div>
+                        <div style="color: #7f8c8d; font-size: 0.85rem;">{{ articolo.sede_cliente.nome_sede }}</div>
+                    {% else %}
+                        <span style="color: #999;">Non assegnato</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if articolo.service_contract %}
+                        <div><span class="badge badge-info">Service Contract</span></div>
+                        <div style="font-size: 0.85rem; color: #7f8c8d; margin-top: 0.25rem;">
+                            {{ articolo.service_contract.numero_contratto }}
+                        </div>
+                    {% else %}
+                        {{ articolo.mesi_garanzia }} mesi
+                    {% endif %}
+                </td>
+                <td>
+                    {% if articolo.service_contract %}
+                        {{ articolo.service_contract.data_fine|date:"d/m/Y" }}
+                    {% else %}
+                        {{ articolo.data_scadenza_garanzia|date:"d/m/Y" }}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if articolo.is_in_garanzia %}
+                        <span class="badge badge-success">✓ In Garanzia</span>
+                    {% else %}
+                        <span class="badge badge-danger">✗ Scaduta</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Nessun articolo presente in questo ordine</p>
+    </div>
+    {% endif %}
+</div>
+
+{% if ordini_rma %}
+<div class="card">
+    <h2>🔧 Ordini RMA Collegati ({{ ordini_rma|length }})</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Numero Ordine</th>
+                <th>Fornitore</th>
+                <th>Data</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ordine_rma in ordini_rma %}
+            <tr>
+                <td><strong>{{ ordine_rma.numero_ordine }}</strong></td>
+                <td>{{ ordine_rma.fornitore.nome }}</td>
+                <td>{{ ordine_rma.data_ordine|date:"d/m/Y" }}</td>
+                <td>
+                    <a href="{% url 'orders:ordine_detail' ordine_rma.pk %}" style="color: #667eea; text-decoration: none;">
+                        Vedi dettaglio →
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if ordini_estensione %}
+<div class="card">
+    <h2>📅 Ordini Estensione Garanzia Collegati ({{ ordini_estensione|length }})</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Numero Ordine</th>
+                <th>Fornitore</th>
+                <th>Data</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ordine_est in ordini_estensione %}
+            <tr>
+                <td><strong>{{ ordine_est.numero_ordine }}</strong></td>
+                <td>{{ ordine_est.fornitore.nome }}</td>
+                <td>{{ ordine_est.data_ordine|date:"d/m/Y" }}</td>
+                <td>
+                    <a href="{% url 'orders:ordine_detail' ordine_est.pk %}" style="color: #667eea; text-decoration: none;">
+                        Vedi dettaglio →
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<div style="margin-top: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
+    <a href="{% url 'admin:orders_ordine_change' ordine.pk %}" style="display: inline-block; padding: 0.75rem 1.5rem; background-color: #667eea; color: white; text-decoration: none; border-radius: 6px; margin-right: 1rem;">
+        ✏️ Modifica Ordine nell'Admin
+    </a>
+    <a href="{% url 'orders:dashboard' %}" style="display: inline-block; padding: 0.75rem 1.5rem; background-color: #6c757d; color: white; text-decoration: none; border-radius: 6px;">
+        ← Torna alla Dashboard
+    </a>
+</div>
+{% endblock %}
+

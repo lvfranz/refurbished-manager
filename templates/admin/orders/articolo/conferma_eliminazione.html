@@ -1,0 +1,51 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 20px auto;">
+    <h1 style="color: #d32f2f;">🗑️ Conferma Eliminazione</h1>
+
+    <div style="margin: 20px 0; padding: 20px; background-color: #ffebee; border: 2px solid #d32f2f; border-radius: 8px;">
+        <p style="margin: 0; font-size: 18px; font-weight: bold; color: #d32f2f;">
+            ⚠️ ATTENZIONE: Stai per eliminare <strong>{{ queryset.count }} articoli</strong>.
+        </p>
+        <p style="margin: 10px 0 0 0; font-size: 16px; color: #333;">
+            Questa azione è <strong>irreversibile</strong>!
+        </p>
+    </div>
+
+    <div style="margin-top: 30px; padding: 20px; background-color: #ffffff; border: 2px solid #d32f2f; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0; color: #d32f2f; font-size: 20px;">📋 Articoli che verranno eliminati:</h3>
+        <ul style="max-height: 400px; overflow-y: auto; line-height: 2;">
+            {% for articolo in queryset %}
+                <li style="margin-bottom: 15px; padding: 10px; background-color: #ffebee; border-left: 4px solid #d32f2f; border-radius: 4px;">
+                    <strong style="font-size: 16px; color: #000;">{{ articolo.codice_articolo }}</strong> - <span style="color: #333;">{{ articolo.descrizione|truncatewords:15 }}</span>
+                    <br><span style="font-size: 14px; color: #000; font-weight: 500;">
+                        Brand: <strong style="color: #d32f2f;">{{ articolo.costruttore|default:"-" }}</strong> |
+                        Categoria: <strong style="color: #d32f2f;">{{ articolo.categoria|default:"-" }}</strong>
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="elimina_selezionati">
+        <input type="hidden" name="post" value="yes">
+        {% for obj in queryset %}
+            <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}">
+        {% endfor %}
+
+        <div style="margin-top: 30px;">
+            <button type="submit" style="background-color: #d32f2f; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold;">
+                🗑️ Sì, Elimina {{ queryset.count }} Articoli
+            </button>
+            <a href="{% url 'admin:orders_articolo_changelist' %}" style="margin-left: 10px; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; display: inline-block; font-size: 16px; font-weight: bold;">
+                ✓ No, Annulla
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
