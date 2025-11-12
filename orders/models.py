@@ -387,12 +387,66 @@ class ArticoloOrdine(models.Model):
         self.full_clean()
         super().save(*args, **kwargs)
 
+    def get_estensioni_garanzia(self):
+        """
+        Trova tutti gli ordini di rinnovo garanzia collegati all'ordine di questo articolo.
+        Ritorna lista di tuple (ordine_rinnovo, mesi_estensione) ordinate per data.
+        """
+        if not self.ordine:
+            return []
+
+        # Trova tutti gli ordini di rinnovo garanzia che hanno questo ordine come materiale collegato
+        ordini_rinnovo = Ordine.objects.filter(
+            tipo_ordine='RINNOVO_GARANZIA',
+            ordine_materiale_collegato=self.ordine
+        ).order_by('data_ordine')
+
+        return [(o, o.mesi_garanzia_default or 0) for o in ordini_rinnovo if o.mesi_garanzia_default]
+
+    def get_data_scadenza_garanzia_estesa(self):
+        """
+        Calcola la data di scadenza garanzia considerando tutte le estensioni.
+        Questo è il metodo da usare per visualizzare la scadenza reale.
+        """
+        if self.service_contract:
+            # Se c'è un service contract, usa quello
+            return None
+
+        if not self.data_scadenza_garanzia:
+            return None
+
+        # Parti dalla scadenza base
+        scadenza = self.data_scadenza_garanzia
+
+        # Aggiungi tutte le estensioni
+        estensioni = self.get_estensioni_garanzia()
+        for ordine_rinnovo, mesi_estensione in estensioni:
+            scadenza = scadenza + relativedelta(months=mesi_estensione)
+
+        return scadenza
+
+    def get_mesi_garanzia_totali(self):
+        """
+        Calcola i mesi totali di garanzia considerando tutte le estensioni.
+        """
+        mesi_base = self.mesi_garanzia
+
+        # Aggiungi tutte le estensioni
+        estensioni = self.get_estensioni_garanzia()
+        for ordine_rinnovo, mesi_estensione in estensioni:
+            mesi_base += mesi_estensione
+
+        return mesi_base
+
     def is_in_garanzia(self):
-        """Verifica se l'articolo è in garanzia"""
+        """Verifica se l'articolo è in garanzia (considerando le estensioni)"""
         if self.service_contract:
             return self.service_contract.is_valid()
-        elif self.data_scadenza_garanzia:
-            return timezone.now().date() <= self.data_scadenza_garanzia
+
+        scadenza_estesa = self.get_data_scadenza_garanzia_estesa()
+        if scadenza_estesa:
+            return timezone.now().date() <= scadenza_estesa
+
         return False
 
     def puo_aprire_rma(self, force=False):

@@ -570,11 +570,11 @@ class ArticoloOrdineInline(admin.StackedInline):  # Uso StackedInline per fields
 
 @admin.register(Ordine)
 class OrdineAdmin(admin.ModelAdmin):
-    form = None  # Sarà impostato in get_form
     list_display = ['numero_ordine', 'fornitore', 'data_ordine', 'tipo_ordine_badge', 'mesi_garanzia_default', 'created_at']
     list_filter = ['tipo_ordine', 'fornitore', 'data_ordine']
     search_fields = ['numero_ordine', 'fornitore__nome', 'note']
     date_hierarchy = 'data_ordine'
+    actions = []
 
     def get_form(self, request, obj=None, **kwargs):
         """Usa il form personalizzato con validazione condizionale"""
@@ -606,11 +606,11 @@ class OrdineAdmin(admin.ModelAdmin):
                     'description': '<strong>⚠️ STEP 1:</strong> Inserisci le informazioni base dell\'ordine. '
                                  'Dopo aver salvato, potrai gestire gli articoli o collegare l\'ordine di riferimento.'
                 }),
-                ('Sede e Garanzia Default (solo per ordini Standard)', {
+                ('Sede e Garanzia Default', {
                     'fields': (('sede_default', 'mesi_garanzia_default'),),
-                    'description': '<strong>Solo per ordini Standard:</strong> Questi valori saranno applicati automaticamente agli articoli.<br>'
-                                 '<em>Per RMA e Rinnovo Garanzia, questi campi saranno ereditati dall\'ordine di riferimento.</em>',
-                    'classes': ('collapse',)
+                    'description': '<strong>Per ordini Standard:</strong> Questi valori saranno applicati automaticamente agli articoli.<br>'
+                                 '<strong>Per Rinnovo Garanzia:</strong> Indica i mesi di ESTENSIONE (es: 36 per 3 anni).<br>'
+                                 '<em>Per RMA, questi campi possono essere ereditati dall\'ordine di riferimento.</em>',
                 }),
                 ('Note', {
                     'fields': ('note',)
@@ -631,7 +631,7 @@ class OrdineAdmin(admin.ModelAdmin):
                     }),
                 )
             else:  # RMA o Rinnovo Garanzia
-                return (
+                fieldsets_list = [
                     ('Informazioni Ordine', {
                         'fields': ('numero_ordine', 'richiesta_offerta', 'fornitore', 'data_ordine', 'tipo_ordine')
                     }),
@@ -641,6 +641,18 @@ class OrdineAdmin(admin.ModelAdmin):
                             'RMA' if obj.tipo_ordine == 'RMA' else 'Rinnovo Garanzia'
                         )
                     }),
+                ]
+
+                # Aggiungi sezione estensione garanzia solo per RINNOVO_GARANZIA
+                if obj.tipo_ordine == 'RINNOVO_GARANZIA':
+                    fieldsets_list.append(
+                        ('Estensione Garanzia', {
+                            'fields': ('stato_estensione_garanzia',),
+                            'description': 'Stato dell\'estensione della garanzia per gli articoli dell\'ordine collegato'
+                        })
+                    )
+
+                fieldsets_list.extend([
                     ('Documento PDF', {
                         'fields': ('pdf_ordine',),
                         'description': 'Carica il documento PDF dell\'ordine'
@@ -648,13 +660,51 @@ class OrdineAdmin(admin.ModelAdmin):
                     ('Note', {
                         'fields': ('note',)
                     }),
-                )
+                ])
+
+                return tuple(fieldsets_list)
 
     def get_readonly_fields(self, request, obj=None):
         """Dopo la creazione, tipo_ordine diventa read-only"""
         if obj:
-            return ['tipo_ordine']
+            readonly = ['tipo_ordine']
+            if obj.tipo_ordine == 'RINNOVO_GARANZIA':
+                readonly.append('stato_estensione_garanzia')
+            return readonly
         return []
+
+    def stato_estensione_garanzia(self, obj):
+        """Mostra lo stato dell'estensione garanzia (calcolo dinamico - nessuna modifica al DB)"""
+        if obj.tipo_ordine != 'RINNOVO_GARANZIA':
+            return '-'
+
+        if not obj.ordine_materiale_collegato:
+            return format_html('<span style="color: orange;">⚠️ Nessun ordine collegato</span>')
+
+        ordine_collegato = obj.ordine_materiale_collegato
+        mesi_estensione = obj.mesi_garanzia_default
+
+        if not mesi_estensione or mesi_estensione <= 0:
+            return format_html('<span style="color: red;">❌ Mesi di estensione non validi</span>')
+
+        # Conta articoli dell'ordine collegato
+        totale_articoli = ordine_collegato.articoli.count()
+
+        return format_html(
+            '<div style="background: #e8f5e9; padding: 10px; border-radius: 4px; border-left: 4px solid #4caf50;">'
+            '<strong style="color: #2e7d32;">✓ Estensione Attiva (Calcolo Dinamico)</strong><br>'
+            '<span style="color: #666;">Articoli interessati: {}</span><br>'
+            '<span style="color: #666;">Estensione: +{} mesi</span><br>'
+            '<div style="margin-top: 8px; padding: 8px; background: #fff; border-radius: 4px;">'
+            '<small style="color: #666;">💡 La garanzia è calcolata dinamicamente dalle view.<br>'
+            'Se elimini o scolleghi questo ordine, la garanzia torna automaticamente al valore originale.</small>'
+            '</div>'
+            '</div>',
+            totale_articoli,
+            mesi_estensione
+        )
+
+    stato_estensione_garanzia.short_description = 'Stato Estensione'
 
     autocomplete_fields = ['sede_default', 'richiesta_offerta', 'ordine_originale_rma', 'ordine_materiale_collegato']
 
@@ -707,8 +757,27 @@ class OrdineAdmin(admin.ModelAdmin):
                             ordine.ordine_originale_rma = ordine_collegato
                         else:  # RINNOVO_GARANZIA
                             ordine.ordine_materiale_collegato = ordine_collegato
+
+                            # La garanzia è ora calcolata dinamicamente nelle view
+                            # Non serve più modificare il database
+                            mesi_estensione = ordine.mesi_garanzia_default
+                            totale_articoli = ordine_collegato.articoli.count()
+
+                            if mesi_estensione and mesi_estensione > 0 and totale_articoli > 0:
+                                self.message_user(
+                                    request,
+                                    f'✅ Ordine collegato! L\'estensione di {mesi_estensione} mesi per {totale_articoli} articoli sarà calcolata dinamicamente nelle view.',
+                                    level='success'
+                                )
+
+                        # Copia anche sede_default e mesi_garanzia_default dall'ordine collegato se non impostati
+                        if not ordine.sede_default:
+                            ordine.sede_default = ordine_collegato.sede_default
+                        if ordine.mesi_garanzia_default == 12:  # Valore di default
+                            ordine.mesi_garanzia_default = ordine_collegato.mesi_garanzia_default
+
                     except Ordine.DoesNotExist:
-                        pass
+                        self.message_user(request, '❌ Ordine selezionato non trovato', level='error')
 
                 if pdf_file:
                     ordine.pdf_ordine = pdf_file
@@ -719,14 +788,27 @@ class OrdineAdmin(admin.ModelAdmin):
 
             # GET: mostra form per selezione
             # Filtra ordini per cliente se possibile
-            ordini_disponibili = Ordine.objects.filter(tipo_ordine='STANDARD').exclude(pk=ordine.pk)
+            ordini_disponibili = Ordine.objects.filter(
+                tipo_ordine='STANDARD'
+            ).exclude(pk=ordine.pk).select_related('fornitore', 'sede_default__cliente')
+
+            # Se ordine ha già una sede_default, filtra per quello stesso cliente
+            if ordine.sede_default:
+                ordini_disponibili = ordini_disponibili.filter(
+                    sede_default__cliente=ordine.sede_default.cliente
+                )
+
+            # Ordina per data decrescente
+            ordini_disponibili = ordini_disponibili.order_by('-data_ordine')
 
             context = {
                 'ordine': ordine,
                 'ordini_disponibili': ordini_disponibili,
+                'mesi_estensione': ordine.mesi_garanzia_default if ordine.tipo_ordine == 'RINNOVO_GARANZIA' else None,
                 'opts': self.model._meta,
                 'has_view_permission': self.has_view_permission(request, ordine),
                 'has_change_permission': self.has_change_permission(request, ordine),
+                'title': f'Gestisci {ordine.get_tipo_ordine_display()}: {ordine.numero_ordine}',
             }
 
             return render(request, 'admin/orders/ordine_gestisci_articoli.html', context)
@@ -824,6 +906,7 @@ class OrdineAdmin(admin.ModelAdmin):
             instance.save()
         formset.save_m2m()
 
+
     def gestisci_articoli_view(self, request, object_id):
         """View personalizzata per gestire articoli in base al tipo ordine"""
         ordine = self.get_object(request, object_id)
@@ -884,6 +967,7 @@ class OrdineAdmin(admin.ModelAdmin):
             context = {
                 'ordine': ordine,
                 'ordini_disponibili': ordini_disponibili,
+                'mesi_estensione': ordine.mesi_garanzia_default if ordine.tipo_ordine == 'RINNOVO_GARANZIA' else None,
                 'opts': self.model._meta,
                 'has_view_permission': self.has_view_permission(request, ordine),
                 'has_change_permission': self.has_change_permission(request, ordine),
@@ -892,6 +976,59 @@ class OrdineAdmin(admin.ModelAdmin):
 
             return render(request, 'admin/orders/ordine_gestisci_articoli.html', context)
 
+    def applica_estensione_view(self, request, object_id):
+        """View per applicare l'estensione garanzia da un pulsante nella change view"""
+        ordine = self.get_object(request, object_id)
+        if ordine is None:
+            return redirect('admin:orders_ordine_changelist')
+
+        if ordine.tipo_ordine != 'RINNOVO_GARANZIA':
+            self.message_user(request, '❌ L\'ordine non è di tipo Rinnovo Garanzia', level='error')
+            return redirect('admin:orders_ordine_change', object_id)
+
+        if not ordine.ordine_materiale_collegato:
+            self.message_user(request, '❌ Nessun ordine collegato. Collegalo prima di applicare l\'estensione.', level='error')
+            return redirect('admin:orders_ordine_change', object_id)
+
+        # Applica l'estensione
+        from dateutil.relativedelta import relativedelta
+
+        ordine_collegato = ordine.ordine_materiale_collegato
+        mesi_estensione = ordine.mesi_garanzia_default
+
+        if not mesi_estensione or mesi_estensione <= 0:
+            self.message_user(request, f'❌ Mesi di estensione non validi: {mesi_estensione}', level='error')
+            return redirect('admin:orders_ordine_change', object_id)
+
+        articoli_estesi = 0
+        articoli_senza_scadenza = 0
+
+        for articolo in ordine_collegato.articoli.all():
+            if articolo.data_scadenza_garanzia:
+                # Ricalcola dalla data ordine originale
+                mesi_originali = ordine_collegato.mesi_garanzia_default or 12
+                articolo.mesi_garanzia = mesi_originali + mesi_estensione
+                articolo.data_scadenza_garanzia = ordine_collegato.data_ordine + relativedelta(months=articolo.mesi_garanzia)
+                articolo.save()
+                articoli_estesi += 1
+            else:
+                articoli_senza_scadenza += 1
+
+        if articoli_estesi > 0:
+            self.message_user(
+                request,
+                f'✅ Garanzia estesa di {mesi_estensione} mesi per {articoli_estesi} articoli dell\'ordine {ordine_collegato.numero_ordine}',
+                level='success'
+            )
+
+        if articoli_senza_scadenza > 0:
+            self.message_user(
+                request,
+                f'⚠️ {articoli_senza_scadenza} articoli non avevano una data di scadenza impostata',
+                level='warning'
+            )
+
+        return redirect('admin:orders_ordine_change', object_id)
 
     def response_add(self, request, obj, post_url_continue=None):
         """Dopo la creazione, redirect alla gestione articoli"""

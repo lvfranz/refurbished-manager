@@ -119,14 +119,24 @@
                             {{ articolo.service_contract.numero_contratto }}
                         </div>
                     {% else %}
-                        {{ articolo.mesi_garanzia }} mesi
+                        {{ articolo.get_mesi_garanzia_totali }} mesi
+                        {% if articolo.get_mesi_garanzia_totali > articolo.mesi_garanzia %}
+                            <div style="font-size: 0.85rem; color: #28a745; margin-top: 0.25rem;">
+                                📅 Base: {{ articolo.mesi_garanzia }} + Estens: {{ articolo.get_estensioni_garanzia|length }}
+                            </div>
+                        {% endif %}
                     {% endif %}
                 </td>
                 <td>
                     {% if articolo.service_contract %}
                         {{ articolo.service_contract.data_fine|date:"d/m/Y" }}
                     {% else %}
-                        {{ articolo.data_scadenza_garanzia|date:"d/m/Y" }}
+                        {{ articolo.get_data_scadenza_garanzia_estesa|date:"d/m/Y" }}
+                        {% if articolo.get_data_scadenza_garanzia_estesa != articolo.data_scadenza_garanzia %}
+                            <div style="font-size: 0.85rem; color: #28a745; margin-top: 0.25rem;">
+                                ⏱️ Base: {{ articolo.data_scadenza_garanzia|date:"d/m/Y" }}
+                            </div>
+                        {% endif %}
                     {% endif %}
                 </td>
                 <td>

@@ -117,6 +117,9 @@
                 Seleziona l'ordine originale da cui proviene il materiale in RMA e carica il documento PDF.
             {% else %}
                 Seleziona l'ordine contenente il materiale per cui si rinnova la garanzia e carica il documento PDF.
+                {% if mesi_estensione %}
+                <br><strong>⏰ Estensione garanzia: {{ mesi_estensione }} mesi</strong> (la garanzia di tutti gli articoli dell'ordine selezionato verrà estesa di {{ mesi_estensione }} mesi a partire dalla loro data di scadenza attuale)
+                {% endif %}
             {% endif %}
         </p>
     </div>
@@ -146,6 +149,9 @@
                                 Data: {{ ordine_disp.data_ordine|date:"d/m/Y" }} |
                                 Cliente: {% if ordine_disp.sede_default %}{{ ordine_disp.sede_default.cliente.nome }} - {{ ordine_disp.sede_default.nome_sede }}{% else %}-{% endif %} |
                                 Articoli: {{ ordine_disp.articoli.count }}
+                                {% if ordine.tipo_ordine == 'RINNOVO_GARANZIA' and mesi_estensione %}
+                                <br><em style="color: #4caf50;">✓ La garanzia degli articoli verrà estesa di {{ mesi_estensione }} mesi dalla loro scadenza attuale</em>
+                                {% endif %}
                             </div>
                         </label>
                     </div>
