@@ -1,6 +1,26 @@
 from django import forms
 import csv
 import io
+from .models import Ordine
+
+
+class OrdineForm(forms.ModelForm):
+    """Form personalizzato per Ordine con validazione condizionale"""
+
+    class Meta:
+        model = Ordine
+        fields = '__all__'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo_ordine = cleaned_data.get('tipo_ordine')
+        sede_default = cleaned_data.get('sede_default')
+
+        # sede_default è obbligatoria SOLO per ordini Standard
+        if tipo_ordine == 'STANDARD' and not sede_default:
+            self.add_error('sede_default', 'La sede default è obbligatoria per ordini Standard')
+
+        return cleaned_data
 
 
 class ImportArticoliCSVForm(forms.Form):

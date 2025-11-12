@@ -1,0 +1,230 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .form-container {
+        max-width: 900px;
+        margin: 20px auto;
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .filter-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+    .filter-section label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+    }
+    .filter-section input, .filter-section select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    .ordini-list {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: white;
+    }
+    .ordine-item {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .ordine-item:hover {
+        background: #f5f5f5;
+    }
+    .ordine-item input[type="radio"] {
+        margin-right: 10px;
+    }
+    .ordine-item.selected {
+        background: #e3f2fd;
+        border-left: 4px solid #2196F3;
+    }
+    .ordine-details {
+        font-size: 13px;
+        color: #666;
+        margin-top: 5px;
+    }
+    .file-upload-section {
+        margin-top: 20px;
+        padding: 20px;
+        background: #fff3cd;
+        border: 2px dashed #ffc107;
+        border-radius: 6px;
+    }
+    .submit-buttons {
+        margin-top: 30px;
+        display: flex;
+        gap: 10px;
+    }
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        transition: all 0.2s;
+    }
+    .btn-primary {
+        background: #2196F3;
+        color: white;
+    }
+    .btn-primary:hover {
+        background: #1976D2;
+    }
+    .btn-secondary {
+        background: #757575;
+        color: white;
+    }
+    .btn-secondary:hover {
+        background: #616161;
+    }
+    .info-box {
+        background: #e3f2fd;
+        border-left: 4px solid #2196F3;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+    .info-box h3 {
+        margin: 0 0 10px 0;
+        color: #1976D2;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="info-box">
+        <h3>{{ ordine.get_tipo_ordine_display }}: {{ ordine.numero_ordine }}</h3>
+        <p>
+            {% if ordine.tipo_ordine == 'RMA' %}
+                Seleziona l'ordine originale da cui proviene il materiale in RMA e carica il documento PDF.
+            {% else %}
+                Seleziona l'ordine contenente il materiale per cui si rinnova la garanzia e carica il documento PDF.
+            {% endif %}
+        </p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="ordineForm">
+        {% csrf_token %}
+
+        <!-- Filtro Cliente -->
+        <div class="filter-section">
+            <label for="filtro_cliente">Filtra per Cliente:</label>
+            <input type="text" id="filtro_cliente" placeholder="Cerca per nome cliente, numero ordine..." onkeyup="filtraOrdini()">
+        </div>
+
+        <!-- Lista Ordini -->
+        <div style="margin-bottom: 20px;">
+            <label style="font-weight: bold; display: block; margin-bottom: 10px;">
+                Seleziona Ordine di Riferimento:
+            </label>
+            <div class="ordini-list" id="ordini-list">
+                {% if ordini_disponibili %}
+                    {% for ordine_disp in ordini_disponibili %}
+                    <div class="ordine-item" data-cliente="{{ ordine_disp.sede_default.cliente.nome|lower }}" data-numero="{{ ordine_disp.numero_ordine|lower }}" onclick="selectOrdine({{ ordine_disp.id }})">
+                        <input type="radio" name="ordine_collegato" value="{{ ordine_disp.id }}" id="ordine_{{ ordine_disp.id }}">
+                        <label for="ordine_{{ ordine_disp.id }}" style="cursor: pointer; margin: 0;">
+                            <strong>{{ ordine_disp.numero_ordine }}</strong> - {{ ordine_disp.fornitore.nome }}
+                            <div class="ordine-details">
+                                Data: {{ ordine_disp.data_ordine|date:"d/m/Y" }} |
+                                Cliente: {% if ordine_disp.sede_default %}{{ ordine_disp.sede_default.cliente.nome }} - {{ ordine_disp.sede_default.nome_sede }}{% else %}-{% endif %} |
+                                Articoli: {{ ordine_disp.articoli.count }}
+                            </div>
+                        </label>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="padding: 20px; text-align: center; color: #999;">
+                        Nessun ordine disponibile
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Upload PDF -->
+        <div class="file-upload-section">
+            <label style="font-weight: bold; display: block; margin-bottom: 10px;">
+                📄 Carica Documento PDF:
+            </label>
+            <input type="file" name="pdf_ordine" accept="application/pdf" style="width: 100%; padding: 10px;">
+            <small style="color: #666; display: block; margin-top: 8px;">
+                Carica il documento PDF dell'ordine {% if ordine.tipo_ordine == 'RMA' %}RMA{% else %}di rinnovo garanzia{% endif %}
+            </small>
+        </div>
+
+        <!-- Pulsanti -->
+        <div class="submit-buttons">
+            <button type="submit" class="btn btn-primary">💾 Salva</button>
+            <a href="{% url 'admin:orders_ordine_changelist' %}" class="btn btn-secondary">Annulla</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function selectOrdine(ordineId) {
+    // Deseleziona tutti
+    document.querySelectorAll('.ordine-item').forEach(item => {
+        item.classList.remove('selected');
+    });
+
+    // Seleziona il radio button
+    const radio = document.getElementById('ordine_' + ordineId);
+    if (radio) {
+        radio.checked = true;
+        // Seleziona visivamente l'item
+        radio.closest('.ordine-item').classList.add('selected');
+    }
+}
+
+function filtraOrdini() {
+    const filtro = document.getElementById('filtro_cliente').value.toLowerCase();
+    const ordini = document.querySelectorAll('.ordine-item');
+
+    ordini.forEach(ordine => {
+        const cliente = ordine.getAttribute('data-cliente') || '';
+        const numero = ordine.getAttribute('data-numero') || '';
+
+        if (cliente.includes(filtro) || numero.includes(filtro)) {
+            ordine.style.display = 'block';
+        } else {
+            ordine.style.display = 'none';
+        }
+    });
+}
+
+// Aggiungi listener ai radio button per la selezione visiva
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('input[name="ordine_collegato"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                selectOrdine(this.value);
+            }
+        });
+    });
+
+    // Se c'è già un ordine selezionato, evidenzialo
+    const selected = document.querySelector('input[name="ordine_collegato"]:checked');
+    if (selected) {
+        selected.closest('.ordine-item').classList.add('selected');
+    }
+});
+</script>
+{% endblock %}
+

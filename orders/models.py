@@ -226,9 +226,9 @@ class Ordine(models.Model):
         'SedeCliente',
         on_delete=models.SET_NULL,
         null=True,
-        blank=False,
+        blank=True,
         verbose_name="Sede Default",
-        help_text="⚠️ OBBLIGATORIO: Sede cliente di default per gli articoli di questo ordine"
+        help_text="⚠️ OBBLIGATORIO per ordini Standard. Per RMA/Rinnovo viene ereditato dall'ordine di riferimento."
     )
     mesi_garanzia_default = models.IntegerField(default=12, help_text="Mesi di garanzia di default per gli articoli di questo ordine", verbose_name="Garanzia Default (mesi)")
     pdf_ordine = models.FileField(upload_to='ordini_pdf/', blank=True, null=True, verbose_name="PDF Ordine", help_text="Upload del documento PDF dell'ordine")
@@ -260,6 +260,12 @@ class Ordine(models.Model):
 
     def __str__(self):
         return f"{self.numero_ordine} - {self.fornitore.nome} ({self.data_ordine})"
+
+    def get_cliente(self):
+        """Ritorna il cliente associato tramite sede_default"""
+        if self.sede_default:
+            return self.sede_default.cliente
+        return None
 
 
 class ArticoloOrdine(models.Model):

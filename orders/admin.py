@@ -570,41 +570,190 @@ class ArticoloOrdineInline(admin.StackedInline):  # Uso StackedInline per fields
 
 @admin.register(Ordine)
 class OrdineAdmin(admin.ModelAdmin):
+    form = None  # Sarà impostato in get_form
     list_display = ['numero_ordine', 'fornitore', 'data_ordine', 'tipo_ordine_badge', 'mesi_garanzia_default', 'created_at']
     list_filter = ['tipo_ordine', 'fornitore', 'data_ordine']
     search_fields = ['numero_ordine', 'fornitore__nome', 'note']
     date_hierarchy = 'data_ordine'
 
+    def get_form(self, request, obj=None, **kwargs):
+        """Usa il form personalizzato con validazione condizionale"""
+        from orders.forms import OrdineForm
+        kwargs['form'] = OrdineForm
+        return super().get_form(request, obj, **kwargs)
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('<path:object_id>/gestisci-articoli/',
+                 self.admin_site.admin_view(self.gestisci_articoli_view),
+                 name='ordine_gestisci_articoli'),
+        ]
+        return custom_urls + urls
+
     def get_inlines(self, request, obj=None):
-        """Mostra gli articoli inline SOLO se l'ordine esiste già (non in creazione)"""
-        if obj:  # Se l'ordine esiste già
+        """Mostra gli articoli inline SOLO se l'ordine è STANDARD e già salvato"""
+        if obj and obj.tipo_ordine == 'STANDARD':
             return [ArticoloOrdineInline]
-        return []  # Nessun inline durante la creazione
+        return []
 
-    fieldsets = (
-        ('Informazioni Ordine', {
-            'fields': ('numero_ordine', 'richiesta_offerta', 'fornitore', 'data_ordine', 'tipo_ordine')
-        }),
-        ('Default per Articoli', {
-            'fields': (('sede_default', 'mesi_garanzia_default'),),
-            'description': '<strong>⚠️ IMPORTANTE:</strong> Questi valori vengono applicati <strong>automaticamente</strong> a tutti i nuovi articoli aggiunti. '
-                          'I campi Sede Cliente e Mesi Garanzia sono nascosti nelle righe articolo ma precompilati con questi valori. '
-                          'Se cambi questi default, puoi riapplicarli a tutti gli articoli esistenti salvando nuovamente l\'ordine.'
-        }),
-        ('Documento', {
-            'fields': ('pdf_ordine',)
-        }),
-        ('Relazioni Ordini Speciali', {
-            'fields': ('ordine_originale_rma', 'ordine_materiale_collegato'),
-            'classes': ('collapse',)
-        }),
-        ('Note', {
-            'fields': ('note',)
-        }),
-    )
+    def get_fieldsets(self, request, obj=None):
+        """Fieldsets diversi per creazione e modifica, e in base al tipo ordine"""
+        if not obj:  # Creazione nuovo ordine - solo info base
+            return (
+                ('Informazioni Ordine', {
+                    'fields': ('numero_ordine', 'richiesta_offerta', 'fornitore', 'data_ordine', 'tipo_ordine'),
+                    'description': '<strong>⚠️ STEP 1:</strong> Inserisci le informazioni base dell\'ordine. '
+                                 'Dopo aver salvato, potrai gestire gli articoli o collegare l\'ordine di riferimento.'
+                }),
+                ('Sede e Garanzia Default (solo per ordini Standard)', {
+                    'fields': (('sede_default', 'mesi_garanzia_default'),),
+                    'description': '<strong>Solo per ordini Standard:</strong> Questi valori saranno applicati automaticamente agli articoli.<br>'
+                                 '<em>Per RMA e Rinnovo Garanzia, questi campi saranno ereditati dall\'ordine di riferimento.</em>',
+                    'classes': ('collapse',)
+                }),
+                ('Note', {
+                    'fields': ('note',)
+                }),
+            )
+        else:  # Modifica ordine esistente
+            if obj.tipo_ordine == 'STANDARD':
+                return (
+                    ('Informazioni Ordine', {
+                        'fields': ('numero_ordine', 'richiesta_offerta', 'fornitore', 'data_ordine', 'tipo_ordine')
+                    }),
+                    ('Default per Articoli', {
+                        'fields': (('sede_default', 'mesi_garanzia_default'),),
+                        'description': '<strong>⚠️ IMPORTANTE:</strong> Questi valori vengono applicati automaticamente a tutti i nuovi articoli.'
+                    }),
+                    ('Note', {
+                        'fields': ('note',)
+                    }),
+                )
+            else:  # RMA o Rinnovo Garanzia
+                return (
+                    ('Informazioni Ordine', {
+                        'fields': ('numero_ordine', 'richiesta_offerta', 'fornitore', 'data_ordine', 'tipo_ordine')
+                    }),
+                    ('Ordine Collegato', {
+                        'fields': ('ordine_originale_rma' if obj.tipo_ordine == 'RMA' else 'ordine_materiale_collegato',),
+                        'description': 'Seleziona l\'ordine di riferimento per questo {}'.format(
+                            'RMA' if obj.tipo_ordine == 'RMA' else 'Rinnovo Garanzia'
+                        )
+                    }),
+                    ('Documento PDF', {
+                        'fields': ('pdf_ordine',),
+                        'description': 'Carica il documento PDF dell\'ordine'
+                    }),
+                    ('Note', {
+                        'fields': ('note',)
+                    }),
+                )
 
-    autocomplete_fields = ['sede_default', 'richiesta_offerta']
+    def get_readonly_fields(self, request, obj=None):
+        """Dopo la creazione, tipo_ordine diventa read-only"""
+        if obj:
+            return ['tipo_ordine']
+        return []
 
+    autocomplete_fields = ['sede_default', 'richiesta_offerta', 'ordine_originale_rma', 'ordine_materiale_collegato']
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """Filtra ordini collegati per cliente quando possibile"""
+        if db_field.name in ['ordine_originale_rma', 'ordine_materiale_collegato']:
+            # Ottieni l'ordine se stiamo modificando
+            if request.resolver_match and 'object_id' in request.resolver_match.kwargs:
+                ordine_id = request.resolver_match.kwargs['object_id']
+                try:
+                    ordine = Ordine.objects.get(pk=ordine_id)
+                    if ordine.sede_default:
+                        # Filtra ordini dello stesso cliente
+                        kwargs["queryset"] = Ordine.objects.filter(
+                            tipo_ordine='STANDARD',
+                            sede_default__cliente=ordine.sede_default.cliente
+                        ).exclude(pk=ordine.pk)
+                    else:
+                        # Se non c'è sede default, mostra tutti gli ordini standard
+                        kwargs["queryset"] = Ordine.objects.filter(tipo_ordine='STANDARD').exclude(pk=ordine.pk)
+                except Ordine.DoesNotExist:
+                    pass
+            else:
+                # Durante la creazione, mostra solo ordini standard
+                kwargs["queryset"] = Ordine.objects.filter(tipo_ordine='STANDARD')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def gestisci_articoli_view(self, request, object_id):
+        """View personalizzata per gestire articoli in base al tipo ordine"""
+        ordine = self.get_object(request, object_id)
+        if ordine is None:
+            return redirect('admin:orders_ordine_changelist')
+
+        if ordine.tipo_ordine == 'STANDARD':
+            # Redirect alla normale change view con inline articoli
+            return redirect('admin:orders_ordine_change', object_id)
+        else:
+            # Mostra interfaccia per selezionare ordine esistente + upload PDF
+            from django.shortcuts import render
+
+            if request.method == 'POST':
+                # Gestisci selezione ordine e upload PDF
+                ordine_collegato_id = request.POST.get('ordine_collegato')
+                pdf_file = request.FILES.get('pdf_ordine')
+
+                if ordine_collegato_id:
+                    try:
+                        ordine_collegato = Ordine.objects.get(pk=ordine_collegato_id)
+                        if ordine.tipo_ordine == 'RMA':
+                            ordine.ordine_originale_rma = ordine_collegato
+                        else:  # RINNOVO_GARANZIA
+                            ordine.ordine_materiale_collegato = ordine_collegato
+                    except Ordine.DoesNotExist:
+                        pass
+
+                if pdf_file:
+                    ordine.pdf_ordine = pdf_file
+
+                ordine.save()
+                self.message_user(request, '✅ Ordine aggiornato con successo!')
+                return redirect('admin:orders_ordine_change', object_id)
+
+            # GET: mostra form per selezione
+            # Filtra ordini per cliente se possibile
+            ordini_disponibili = Ordine.objects.filter(tipo_ordine='STANDARD').exclude(pk=ordine.pk)
+
+            context = {
+                'ordine': ordine,
+                'ordini_disponibili': ordini_disponibili,
+                'opts': self.model._meta,
+                'has_view_permission': self.has_view_permission(request, ordine),
+                'has_change_permission': self.has_change_permission(request, ordine),
+            }
+
+            return render(request, 'admin/orders/ordine_gestisci_articoli.html', context)
+
+
+    def response_add(self, request, obj, post_url_continue=None):
+        """Dopo la creazione, redirect alla gestione articoli"""
+        if obj.tipo_ordine == 'STANDARD':
+            # Per ordini standard, vai alla change view con inline articoli
+            self.message_user(
+                request,
+                format_html(
+                    '✅ Ordine creato con successo! <strong>Ora aggiungi gli articoli</strong> usando "Aggiungi un altro Articolo Ordine" qui sotto.'
+                ),
+                level='success'
+            )
+            return redirect('admin:orders_ordine_change', obj.pk)
+        else:
+            # Per RMA/Rinnovo, vai alla view di gestione articoli
+            self.message_user(
+                request,
+                format_html(
+                    '✅ Ordine creato! <strong>Ora seleziona l\'ordine di riferimento e carica il PDF.</strong>'
+                ),
+                level='success'
+            )
+            return redirect('admin:orders_ordine_change', obj.pk)
 
     def save_model(self, request, obj, form, change):
         """Applica i default a tutti gli articoli quando cambiano"""
@@ -613,16 +762,167 @@ class OrdineAdmin(admin.ModelAdmin):
         # Salva prima l'ordine
         super().save_model(request, obj, form, change)
 
-        # Se è un nuovo ordine, mostra messaggio informativo
-        if is_new:
+        # Se è una modifica (non nuovo ordine), aggiorna gli articoli esistenti
+        if change:
+            # Aggiorna sede_default su tutti gli articoli se impostata
+            if obj.sede_default:
+                obj.articoli.filter(sede_cliente__isnull=True).update(sede_cliente=obj.sede_default)
+                # Messaggio all'utente
+                count_sede = obj.articoli.filter(sede_cliente=obj.sede_default).count()
+                if count_sede > 0:
+                    self.message_user(request, f'Sede default applicata a {count_sede} articoli')
+
+            # Aggiorna mesi_garanzia_default su tutti gli articoli
+            if obj.mesi_garanzia_default:
+                articoli_aggiornati = obj.articoli.filter(service_contract__isnull=True)
+                for articolo in articoli_aggiornati:
+                    articolo.mesi_garanzia = obj.mesi_garanzia_default
+                    # Ricalcola scadenza garanzia
+                    if obj.data_ordine:
+                        from dateutil.relativedelta import relativedelta
+                        articolo.data_scadenza_garanzia = obj.data_ordine + relativedelta(months=obj.mesi_garanzia_default)
+                    articolo.save()
+
+                count_garanzia = articoli_aggiornati.count()
+                if count_garanzia > 0:
+                    self.message_user(request, f'Garanzia default ({obj.mesi_garanzia_default} mesi) applicata a {count_garanzia} articoli')
+
+    def tipo_ordine_badge(self, obj):
+        colors = {
+            'STANDARD': '#2196F3',
+            'RMA': '#ff9800',
+            'RINNOVO_GARANZIA': '#4caf50',
+        }
+        color = colors.get(obj.tipo_ordine, '#999')
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 10px; border-radius: 3px; font-size: 0.85em;">{}</span>',
+            color,
+            obj.get_tipo_ordine_display()
+        )
+    tipo_ordine_badge.short_description = 'Tipo'
+
+    def numero_articoli(self, obj):
+        return obj.articoli.count()
+    numero_articoli.short_description = 'N. Articoli'
+
+    def save_formset(self, request, form, formset, change):
+        """Applica sede_default e mesi_garanzia_default ai nuovi articoli prima del salvataggio."""
+        instances = formset.save(commit=False)
+        ordine = form.instance
+        for instance in instances:
+            if isinstance(instance, ArticoloOrdine):
+                # sede default
+                if not instance.sede_cliente and getattr(ordine, 'sede_default', None):
+                    instance.sede_cliente = ordine.sede_default
+                # mesi garanzia default (solo se non impostato o impostato al default 12)
+                if (not instance.mesi_garanzia or instance.mesi_garanzia == 12) and getattr(ordine, 'mesi_garanzia_default', None):
+                    instance.mesi_garanzia = ordine.mesi_garanzia_default
+                # calcolo scadenza se non sotto SC
+                if not instance.service_contract and not instance.data_scadenza_garanzia and ordine.data_ordine and instance.mesi_garanzia:
+                    from dateutil.relativedelta import relativedelta
+                    instance.data_scadenza_garanzia = ordine.data_ordine + relativedelta(months=instance.mesi_garanzia)
+            instance.save()
+        formset.save_m2m()
+
+    def gestisci_articoli_view(self, request, object_id):
+        """View personalizzata per gestire articoli in base al tipo ordine"""
+        ordine = self.get_object(request, object_id)
+        if ordine is None:
+            return redirect('admin:orders_ordine_changelist')
+
+        if ordine.tipo_ordine == 'STANDARD':
+            # Redirect alla normale change view con inline articoli
+            return redirect('admin:orders_ordine_change', object_id)
+        else:
+            # Mostra interfaccia per selezionare ordine esistente + upload PDF
+            from django.shortcuts import render
+
+            if request.method == 'POST':
+                # Gestisci selezione ordine e upload PDF
+                ordine_collegato_id = request.POST.get('ordine_collegato')
+                pdf_file = request.FILES.get('pdf_ordine')
+
+                if ordine_collegato_id:
+                    try:
+                        ordine_collegato = Ordine.objects.get(pk=ordine_collegato_id)
+                        if ordine.tipo_ordine == 'RMA':
+                            ordine.ordine_originale_rma = ordine_collegato
+                        else:  # RINNOVO_GARANZIA
+                            ordine.ordine_materiale_collegato = ordine_collegato
+
+                        # Copia anche sede_default e mesi_garanzia_default dall'ordine collegato
+                        if not ordine.sede_default:
+                            ordine.sede_default = ordine_collegato.sede_default
+                        if ordine.mesi_garanzia_default == 12:  # Valore di default
+                            ordine.mesi_garanzia_default = ordine_collegato.mesi_garanzia_default
+
+                    except Ordine.DoesNotExist:
+                        self.message_user(request, '❌ Ordine selezionato non trovato', level='error')
+
+                if pdf_file:
+                    ordine.pdf_ordine = pdf_file
+
+                ordine.save()
+                self.message_user(request, '✅ Ordine aggiornato con successo!')
+                return redirect('admin:orders_ordine_change', object_id)
+
+            # GET: mostra form per selezione
+            # Filtra ordini per cliente se possibile
+            ordini_disponibili = Ordine.objects.filter(
+                tipo_ordine='STANDARD'
+            ).exclude(pk=ordine.pk).select_related('fornitore', 'sede_default__cliente')
+
+            # Se ordine ha già una sede_default, filtra per quello stesso cliente
+            if ordine.sede_default:
+                ordini_disponibili = ordini_disponibili.filter(
+                    sede_default__cliente=ordine.sede_default.cliente
+                )
+
+            # Ordina per data decrescente
+            ordini_disponibili = ordini_disponibili.order_by('-data_ordine')
+
+            context = {
+                'ordine': ordine,
+                'ordini_disponibili': ordini_disponibili,
+                'opts': self.model._meta,
+                'has_view_permission': self.has_view_permission(request, ordine),
+                'has_change_permission': self.has_change_permission(request, ordine),
+                'title': f'Gestisci {ordine.get_tipo_ordine_display()}: {ordine.numero_ordine}',
+            }
+
+            return render(request, 'admin/orders/ordine_gestisci_articoli.html', context)
+
+
+    def response_add(self, request, obj, post_url_continue=None):
+        """Dopo la creazione, redirect alla gestione articoli"""
+        if obj.tipo_ordine == 'STANDARD':
+            # Per ordini standard, vai alla change view con inline articoli
             self.message_user(
                 request,
                 format_html(
-                    '✅ Ordine creato con successo! <strong>Ora puoi aggiungere gli articoli</strong> usando il pulsante "Aggiungi un altro Articolo Ordine" qui sotto. '
-                    'I campi Sede Cliente e Mesi Garanzia saranno precompilati automaticamente con i valori di default dell\'ordine.'
+                    '✅ Ordine creato con successo! <strong>Ora aggiungi gli articoli</strong> usando "Aggiungi un altro Articolo Ordine" qui sotto.'
                 ),
                 level='success'
             )
+            return redirect('admin:orders_ordine_change', obj.pk)
+        else:
+            # Per RMA/Rinnovo, vai alla view di gestione articoli
+            self.message_user(
+                request,
+                format_html(
+                    '✅ Ordine creato! <strong>Ora seleziona l\'ordine di riferimento e carica il PDF.</strong>'
+                ),
+                level='success'
+            )
+            return redirect('admin:orders_ordine_change', obj.pk)
+
+    def save_model(self, request, obj, form, change):
+        """Applica i default a tutti gli articoli quando cambiano"""
+        is_new = not change
+
+        # Salva prima l'ordine
+        super().save_model(request, obj, form, change)
+
 
         # Se è una modifica (non nuovo ordine), aggiorna gli articoli esistenti
         if change:
