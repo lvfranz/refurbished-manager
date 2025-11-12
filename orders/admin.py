@@ -570,7 +570,7 @@ class ArticoloOrdineInline(admin.StackedInline):  # Uso StackedInline per fields
 
 @admin.register(Ordine)
 class OrdineAdmin(admin.ModelAdmin):
-    list_display = ['numero_ordine', 'fornitore', 'data_ordine', 'tipo_ordine_badge', 'mesi_garanzia_default', 'created_at']
+    list_display = ['numero_ordine', 'fornitore', 'data_ordine', 'tipo_ordine_badge', 'mesi_garanzia_default', 'pdf_link', 'created_at']
     list_filter = ['tipo_ordine', 'fornitore', 'data_ordine']
     search_fields = ['numero_ordine', 'fornitore__nome', 'note']
     date_hierarchy = 'data_ordine'
@@ -813,7 +813,6 @@ class OrdineAdmin(admin.ModelAdmin):
 
             return render(request, 'admin/orders/ordine_gestisci_articoli.html', context)
 
-
     def response_add(self, request, obj, post_url_continue=None):
         """Dopo la creazione, redirect alla gestione articoli"""
         if obj.tipo_ordine == 'STANDARD':
@@ -882,6 +881,16 @@ class OrdineAdmin(admin.ModelAdmin):
             obj.get_tipo_ordine_display()
         )
     tipo_ordine_badge.short_description = 'Tipo'
+
+    def pdf_link(self, obj):
+        """Mostra link per aprire il PDF se presente"""
+        if obj.pdf_ordine:
+            return format_html(
+                '<a href="{}" target="_blank" style="color: #9c27b0; text-decoration: none; font-weight: bold;" title="Apri PDF">📄 PDF</a>',
+                obj.pdf_ordine.url
+            )
+        return format_html('<span style="color: #ccc;">-</span>')
+    pdf_link.short_description = 'Documento'
 
     def numero_articoli(self, obj):
         return obj.articoli.count()
@@ -1100,9 +1109,15 @@ class OrdineAdmin(admin.ModelAdmin):
         )
     tipo_ordine_badge.short_description = 'Tipo'
 
-    def numero_articoli(self, obj):
-        return obj.articoli.count()
-    numero_articoli.short_description = 'N. Articoli'
+    def pdf_link(self, obj):
+        """Mostra link per aprire il PDF se presente"""
+        if obj.pdf_ordine:
+            return format_html(
+                '<a href="{}" target="_blank" style="color: #9c27b0; text-decoration: none; font-weight: bold;" title="Apri PDF">📄 PDF</a>',
+                obj.pdf_ordine.url
+            )
+        return format_html('<span style="color: #ccc;">-</span>')
+    pdf_link.short_description = 'Documento'
 
     def save_formset(self, request, form, formset, change):
         """Applica sede_default e mesi_garanzia_default ai nuovi articoli prima del salvataggio."""

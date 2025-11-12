@@ -2,9 +2,17 @@
 
 Sistema di gestione completo per ordini di materiale refurbished con gestione garanzie, service contract e RMA.
 
+## 📚 Documentazione
+
+📘 **[GUIDA UTENTE COMPLETA - Estensione Garanzia](GUIDA_UTENTE_ESTENSIONE_GARANZIA.md)**
+- Tutto quello che devi sapere sul sistema di estensione garanzia
+- Procedura operativa passo-passo
+- Esempi pratici e FAQ
+- Troubleshooting e best practices
+
 ## 🚀 Caratteristiche Principali
 
-### 📋 Tabelle Implementate
+### 📋 Gestione Completa
 
 1. **Clienti e Sedi**
    - Gestione clienti con nome
